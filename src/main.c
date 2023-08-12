@@ -189,7 +189,7 @@ void socket_server_task(void *pvParameters) {
     struct sockaddr_in server_addr;
     server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(8081);
+    server_addr.sin_port = htons(16385);
     addr_family = AF_INET;
     ip_protocol = IPPROTO_IP;
 
@@ -348,7 +348,7 @@ httpd_uri_t uri_home = {
 httpd_handle_t setup_stream_server(void)
 {
     httpd_config_t stream_config = HTTPD_DEFAULT_CONFIG();
-    stream_config.server_port = 8080;
+    stream_config.server_port = 16384;
     stream_config.ctrl_port = 32770;
 
     httpd_handle_t stream_httpd  = NULL;
@@ -358,7 +358,7 @@ httpd_handle_t setup_stream_server(void)
         httpd_register_uri_handler(stream_httpd , &uri_get);
     }
 
-    ESP_LOGI(TAG, "ESP32 CAM Web Server is up and running\n");
+    ESP_LOGI(TAG, "Ixtli ESP32 CAM Socket Server is up and running\n");
     return stream_httpd;
 }
 
