@@ -1,0 +1,8 @@
+.pio
+.vscode/*
+bin
+lib/esp32-camera
+lib/python*
+build/
+pyvenv.cfg
+sdkconfig.*
