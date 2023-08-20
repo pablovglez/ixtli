@@ -5,8 +5,8 @@ static const char *TAG = "Connect_WiFi";
 int s_retry_num = 0;
 
 
-#define WIFI_SSID "Huey_Huitzil"
-#define WIFI_PASSWORD "Q3kaJ*iBma3aK@"
+#define WIFI_SSID "fake_ap"
+#define WIFI_PASSWORD "dummy"
 #define MAXIMUM_RETRY 5
 /* FreeRTOS event group to signal when we are connected*/
 EventGroupHandle_t s_wifi_event_group;
@@ -49,7 +49,7 @@ static void event_handler(void *arg, esp_event_base_t event_base,
     }
 }
 
-void connect_wifi(void)
+void connect_wifi(char* wifi_ssid, char * wifi_password)
 {
     s_wifi_event_group = xEventGroupCreate();
 
@@ -84,6 +84,12 @@ void connect_wifi(void)
             .threshold.authmode = WIFI_AUTH_WPA2_PSK,
         },
     };
+
+    if(wifi_ssid != NULL || wifi_password != NULL){
+        memcpy(wifi_config.sta.ssid, wifi_ssid, strlen(wifi_ssid));
+        memcpy(wifi_config.sta.password, wifi_password, strlen(wifi_password));
+    }
+
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
