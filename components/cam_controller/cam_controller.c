@@ -1,5 +1,7 @@
 #include <lwip/sockets.h>
 #include "driver/gpio.h"
+#include "esp_timer.h"
+
 
 #include "esp_log.h"
 #include "esp_http_server.h"
@@ -106,7 +108,7 @@ void do_transmit(const int sock){
         int64_t frame_time = fr_end - last_frame;
         last_frame = fr_end;
         frame_time /= 1000;
-        ESP_LOGI(TAG, "MJPG: %uKB %ums (%.1ffps)",
+        ESP_LOGI(TAG, "MJPG: %luKB %lums (%.1ffps)",
         (uint32_t)(_jpg_buf_len/1024),
         (uint32_t)frame_time, 1000.0 / (uint32_t)frame_time);
 
