@@ -6,7 +6,7 @@
  * 
  * @return Global pamameters
  */
-void setup_api_server(void);
+void setup_api_server(char * given_key);
 
 
 #endif

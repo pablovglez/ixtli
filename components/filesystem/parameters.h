@@ -11,18 +11,22 @@
 #define MAX_ADV_NAME    20
 
 typedef enum {
+    PROJECT_NAME,
     WF_SSID,
     WF_PASS,
     CAM_JPEG_QUALITY,
     CAM_FRAME_SIZE,
+    AUTHKEY,
     PARAM_END
 } IxtliParamEnum;
 
 typedef struct Settings {
+  char project_name[20];
   char wifi_ssid[UUID_SZ];
   char wifi_pass[UUID_SZ];
   int cam_jpeg_quality;
   int cam_frame_size;
+  char authkey[302];
 } IxtliPersistentSettings;
 
 extern IxtliPersistentSettings global_params;
