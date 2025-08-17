@@ -47,6 +47,7 @@ static esp_err_t init_spiffs(void){
     return ESP_OK;
 }
 
+
 void app_main(){
     ESP_ERROR_CHECK(init_spiffs());
 
@@ -64,9 +65,6 @@ void app_main(){
     connect_wifi(global_params.project_name, global_params.wifi_ssid, global_params.wifi_pass);
     char ip_address[16] = {0};
     get_ip_address(ip_address, 16);
-    gpio_reset_pin(4);
-    /* Set the GPIO as a push/pull output */
-    gpio_set_direction(4, GPIO_MODE_OUTPUT);
 
     if (!wifi_connect_status)
     {
@@ -101,4 +99,6 @@ void app_main(){
     }
     ESP_LOGI(TAG, "Camera Ready! Use 'http://%s' to connect", ip_address);
     
+    greeting_led();
+
 }

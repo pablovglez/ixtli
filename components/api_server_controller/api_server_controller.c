@@ -4,6 +4,7 @@
 #include "esp_http_server.h"
 #include "esp_https_server.h"
 #include "esp_https_ota.h"
+#include "driver/ledc.h"
 #include "esp_log.h"
 #include "lwip/apps/sntp.h"
 #include <esp_ota_ops.h>
@@ -13,7 +14,16 @@
 
 #include "cam_controller.h"
 
-#define CONFIG_LED_MAX_INTENSITY 255
+// Max value for LEDC duty cycle (8-bit resolution)
+// 2^8 - 1 = 255
+#define CONFIG_LED_MAX_INTENSITY 255 
+#define LEDC_CHANNEL LEDC_CHANNEL_0
+#define LEDC_TIMER   LEDC_TIMER_0
+#ifdef BOARD_XIAO_ESP32S3
+#define LEDC_OUTPUT_IO LED_GPIO_NUM // Note: No LED on Xiao ESP32S3
+#else
+#define LEDC_OUTPUT_IO 4 // GPIO 4 for LED flash
+#endif
 
 static const char *TAG = "API-SERVER";
 
@@ -21,7 +31,7 @@ char auth_token[56];
 
 static esp_ota_handle_t update_handle = 0;
 static const esp_partition_t *update_partition = NULL;
-bool led_bool = 0;
+bool led_bool = false;
 
 // Function to handle OTA updates
 static esp_err_t ota_post_handler(httpd_req_t *req) {
@@ -146,67 +156,7 @@ static esp_err_t cmd_handler(httpd_req_t *req)
     ESP_LOGI(TAG, "%s = %d", variable, val);
     // Pass the command to the camera controller
     err_t res = process_cmd(variable, val);
-    /*
-    sensor_t *s = esp_camera_sensor_get();
-
-    int res = 0;
-
-    if (!strcmp(variable, "framesize")) {
-        if (s->pixformat == PIXFORMAT_JPEG) {
-            res = s->set_framesize(s, (framesize_t)val);
-        }
-    }
-    else if (!strcmp(variable, "quality"))
-        res = s->set_quality(s, val);
-    else if (!strcmp(variable, "contrast"))
-        res = s->set_contrast(s, val);
-    else if (!strcmp(variable, "brightness"))
-        res = s->set_brightness(s, val);
-    else if (!strcmp(variable, "saturation"))
-        res = s->set_saturation(s, val);
-    else if (!strcmp(variable, "gainceiling"))
-        res = s->set_gainceiling(s, (gainceiling_t)val);
-    else if (!strcmp(variable, "colorbar"))
-        res = s->set_colorbar(s, val);
-    else if (!strcmp(variable, "awb"))
-        res = s->set_whitebal(s, val);
-    else if (!strcmp(variable, "agc"))
-        res = s->set_gain_ctrl(s, val);
-    else if (!strcmp(variable, "aec"))
-        res = s->set_exposure_ctrl(s, val);
-    else if (!strcmp(variable, "hmirror"))
-        res = s->set_hmirror(s, val);
-    else if (!strcmp(variable, "vflip"))
-        res = s->set_vflip(s, val);
-    else if (!strcmp(variable, "awb_gain"))
-        res = s->set_awb_gain(s, val);
-    else if (!strcmp(variable, "agc_gain"))
-        res = s->set_agc_gain(s, val);
-    else if (!strcmp(variable, "aec_value"))
-        res = s->set_aec_value(s, val);
-    else if (!strcmp(variable, "aec2"))
-        res = s->set_aec2(s, val);
-    else if (!strcmp(variable, "dcw"))
-        res = s->set_dcw(s, val);
-    else if (!strcmp(variable, "bpc"))
-        res = s->set_bpc(s, val);
-    else if (!strcmp(variable, "wpc"))
-        res = s->set_wpc(s, val);
-    else if (!strcmp(variable, "raw_gma"))
-        res = s->set_raw_gma(s, val);
-    else if (!strcmp(variable, "lenc"))
-        res = s->set_lenc(s, val);
-    else if (!strcmp(variable, "special_effect"))
-        res = s->set_special_effect(s, val);
-    else if (!strcmp(variable, "wb_mode"))
-        res = s->set_wb_mode(s, val);
-    else if (!strcmp(variable, "ae_level"))
-        res = s->set_ae_level(s, val);
-    else {
-        ESP_LOGI(TAG, "Unknown command: %s", variable);
-        res = -1;
-    }
-    */
+    
 
     if (res < 0) {
         return httpd_resp_send_500(req);
@@ -220,32 +170,6 @@ static esp_err_t cmd_handler(httpd_req_t *req)
 
 static esp_err_t snapshot_handler(httpd_req_t *req){
     esp_err_t res = ESP_OK;
-    /*
-    camera_fb_t *fb = NULL;
-    esp_err_t res = ESP_OK;
-    size_t _jpg_buf_len;
-    uint8_t * _jpg_buf;
-
-    int8_t retries = 5;
-
-    while (retries > 0)
-    {
-        fb = esp_camera_fb_get();
-        if (!fb){
-            retries =- 1;
-        }
-        else
-            break;
-    }
-
-    if (!fb)
-    {
-        ESP_LOGE(TAG, "Camera capture failed");
-        httpd_resp_send_500(req);
-        return ESP_FAIL;
-    }
-
-    */
 
     camera_fb_t* snapshot = NULL;
     res  = take_snapshot(snapshot);    
@@ -253,24 +177,6 @@ static esp_err_t snapshot_handler(httpd_req_t *req){
     httpd_resp_set_type(req, "image/jpeg");
     httpd_resp_set_hdr(req, "Content-Disposition", "inline; filename=capture.jpg");
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
-
-    /*
-    char ts[32];
-    snprintf(ts, 32, "%ld.%06ld", fb->timestamp.tv_sec, fb->timestamp.tv_usec);
-    httpd_resp_set_hdr(req, "X-Timestamp", (const char *)ts);
-
-    if(fb->format != PIXFORMAT_JPEG){
-        bool jpeg_converted = frame2jpg(fb, 80, &_jpg_buf, &_jpg_buf_len);
-        if(!jpeg_converted){
-            ESP_LOGE(TAG, "JPEG compression failed");
-            esp_camera_fb_return(fb);
-            res = ESP_FAIL;
-        }
-    } else {
-        _jpg_buf_len = fb->len;
-        _jpg_buf = fb->buf;
-    }
-    */
     
     if(res == ESP_OK){
         char ts[32];
@@ -327,46 +233,7 @@ static esp_err_t status_handler(httpd_req_t *req)
     static char json_response[1024];
 
     gen_status_json(json_response);
-    
-    /*
-    sensor_t *s = esp_camera_sensor_get();
-    char *p = json_response;
-    *p++ = '{';
 
-    p+=print_reg(p, s, 0xd3, 0xFF);
-    p+=print_reg(p, s, 0x111, 0xFF);
-    p+=print_reg(p, s, 0x132, 0xFF);
-
-
-    p += sprintf(p, "\"xclk\":%u,", s->xclk_freq_hz / 1000000);
-    p += sprintf(p, "\"pixformat\":%u,", s->pixformat);
-    p += sprintf(p, "\"framesize\":%u,", s->status.framesize);
-    p += sprintf(p, "\"quality\":%u,", s->status.quality);
-    p += sprintf(p, "\"brightness\":%d,", s->status.brightness);
-    p += sprintf(p, "\"contrast\":%d,", s->status.contrast);
-    p += sprintf(p, "\"saturation\":%d,", s->status.saturation);
-    p += sprintf(p, "\"sharpness\":%d,", s->status.sharpness);
-    p += sprintf(p, "\"special_effect\":%u,", s->status.special_effect);
-    p += sprintf(p, "\"wb_mode\":%u,", s->status.wb_mode);
-    p += sprintf(p, "\"awb\":%u,", s->status.awb);
-    p += sprintf(p, "\"awb_gain\":%u,", s->status.awb_gain);
-    p += sprintf(p, "\"aec\":%u,", s->status.aec);
-    p += sprintf(p, "\"aec2\":%u,", s->status.aec2);
-    p += sprintf(p, "\"ae_level\":%d,", s->status.ae_level);
-    p += sprintf(p, "\"aec_value\":%u,", s->status.aec_value);
-    p += sprintf(p, "\"agc\":%u,", s->status.agc);
-    p += sprintf(p, "\"agc_gain\":%u,", s->status.agc_gain);
-    p += sprintf(p, "\"gainceiling\":%u,", s->status.gainceiling);
-    p += sprintf(p, "\"bpc\":%u,", s->status.bpc);
-    p += sprintf(p, "\"wpc\":%u,", s->status.wpc);
-    p += sprintf(p, "\"raw_gma\":%u,", s->status.raw_gma);
-    p += sprintf(p, "\"lenc\":%u,", s->status.lenc);
-    p += sprintf(p, "\"hmirror\":%u,", s->status.hmirror);
-    p += sprintf(p, "\"dcw\":%u,", s->status.dcw);
-    p += sprintf(p, "\"colorbar\":%u", s->status.colorbar);
-    *p++ = '}';
-    *p++ = 0;
-    */
     httpd_resp_set_type(req, "application/json");
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     return httpd_resp_send(req, json_response, strlen(json_response));
@@ -409,16 +276,97 @@ esp_err_t send_web_page(httpd_req_t *req)
     return ESP_OK;
 }
 
-esp_err_t get_req_handler(httpd_req_t *req)
-{
-    return send_web_page(req);
+void set_led_intensity(uint32_t duty) {
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL, duty);
+    ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL);
+}
+
+void greeting_led() {
+    const int DOT = 100 / portTICK_PERIOD_MS;
+    const int DASH = 300 / portTICK_PERIOD_MS;
+    const int SYMBOL_PAUSE = 100 / portTICK_PERIOD_MS;
+    const int LETTER_PAUSE = 300 / portTICK_PERIOD_MS;
+    const uint32_t INTENSITY = (uint32_t) CONFIG_LED_MAX_INTENSITY * 0.1;
+
+    set_led_intensity(0); // Start with LED off
+    vTaskDelay(500 / portTICK_PERIOD_MS);
+
+    // Morse for IXTLI: .. -..- - .-.. .. -.-.--
+    // I: ..
+    set_led_intensity(INTENSITY); vTaskDelay(DOT);
+    set_led_intensity(0); vTaskDelay(SYMBOL_PAUSE);
+    set_led_intensity(INTENSITY); vTaskDelay(DOT);
+    set_led_intensity(0); vTaskDelay(LETTER_PAUSE);
+
+    // X: -..-
+    set_led_intensity(INTENSITY); vTaskDelay(DASH);
+    set_led_intensity(0); vTaskDelay(SYMBOL_PAUSE);
+    set_led_intensity(INTENSITY); vTaskDelay(DOT);
+    set_led_intensity(0); vTaskDelay(SYMBOL_PAUSE);
+    set_led_intensity(INTENSITY); vTaskDelay(DOT);
+    set_led_intensity(0); vTaskDelay(SYMBOL_PAUSE);
+    set_led_intensity(INTENSITY); vTaskDelay(DASH);
+    set_led_intensity(0); vTaskDelay(LETTER_PAUSE);
+
+    // T: -
+    set_led_intensity(INTENSITY); vTaskDelay(DASH);
+    set_led_intensity(0); vTaskDelay(LETTER_PAUSE);
+
+    // L: .-..
+    set_led_intensity(INTENSITY); vTaskDelay(DOT);
+    set_led_intensity(0); vTaskDelay(SYMBOL_PAUSE);
+    set_led_intensity(INTENSITY); vTaskDelay(DASH);
+    set_led_intensity(0); vTaskDelay(SYMBOL_PAUSE);
+    set_led_intensity(INTENSITY); vTaskDelay(DOT);
+    set_led_intensity(0); vTaskDelay(SYMBOL_PAUSE);
+    set_led_intensity(INTENSITY); vTaskDelay(DOT);
+    set_led_intensity(0); vTaskDelay(LETTER_PAUSE);
+
+    // I: ..
+    set_led_intensity(INTENSITY); vTaskDelay(DOT);
+    set_led_intensity(0); vTaskDelay(SYMBOL_PAUSE);
+    set_led_intensity(INTENSITY); vTaskDelay(DOT);
+    set_led_intensity(0); vTaskDelay(LETTER_PAUSE);
+    
+    set_led_intensity(0); // Ensure LED is off at the end
+}
+
+void setupLedFlash() 
+{   
+    ledc_timer_config_t ledc_timer = {
+        .speed_mode       = LEDC_LOW_SPEED_MODE,
+        .timer_num        = LEDC_TIMER,
+        .duty_resolution  = LEDC_TIMER_8_BIT, // 8-bit resolution
+        .freq_hz          = 5000,
+        .clk_cfg          = LEDC_AUTO_CLK
+    };
+    ledc_timer_config(&ledc_timer);
+
+    ledc_channel_config_t ledc_channel = {
+        .speed_mode     = LEDC_LOW_SPEED_MODE,
+        .channel        = LEDC_CHANNEL,
+        .timer_sel      = LEDC_TIMER,
+        .intr_type      = LEDC_INTR_DISABLE,
+        .gpio_num       = LEDC_OUTPUT_IO,
+        .duty           = 0,
+        .hpoint         = 0
+    };
+    ledc_channel_config(&ledc_channel);
 }
 
 static esp_err_t enable_led(httpd_req_t *req)
 { // Turn LED On or Off
     led_bool = (led_bool + 1 ) % 2 ;
-    //ledcWrite(2, led_bool*CONFIG_LED_MAX_INTENSITY);
+    #ifdef DEBUG_ON
+    ESP_LOGI(TAG, "LED flash is now %s", led_bool ? "ON" : "OFF");
+    #endif
+    set_led_intensity(led_bool ? CONFIG_LED_MAX_INTENSITY : 0);
 
+    return send_web_page(req);
+}
+
+esp_err_t get_req_handler(httpd_req_t *req)
+{
     return send_web_page(req);
 }
 
@@ -496,7 +444,8 @@ void obtain_time() {
 }
 
 void setup_api_server(char * given_key)
-{
+{   
+    setupLedFlash();
     httpd_config_t api_config = HTTPD_DEFAULT_CONFIG();
     httpd_handle_t api_httpd  = NULL;
     strcpy(auth_token, given_key);
@@ -510,6 +459,6 @@ void setup_api_server(char * given_key)
     }
 
     ESP_LOGI(TAG, "API Server is up and running\n");
-    //return api_httpd;
+    
 }
 
