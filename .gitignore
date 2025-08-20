@@ -6,3 +6,7 @@ lib/python*
 build/
 pyvenv.cfg
 sdkconfig.*
+.idea/
+Kconfig
+ixtli.code-workspace
+dependencies.lock

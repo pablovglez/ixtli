@@ -1,9 +1,11 @@
 #include <esp_system.h>
 #include <nvs_flash.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
+//#include "freertos/FreeRTOS.h"
+//#include "freertos/task.h"
 #include "driver/gpio.h"
 #include "esp_spiffs.h"
+#include "esp_log.h"
+//#include "mbedtls/aes.h"
 
 #include "connect_wifi.h"
 #include "ixtli_config.h"
@@ -45,8 +47,8 @@ static esp_err_t init_spiffs(void){
     return ESP_OK;
 }
 
+
 void app_main(){
-    esp_err_t err;
     ESP_ERROR_CHECK(init_spiffs());
 
     // Initialize NVS
@@ -60,18 +62,43 @@ void app_main(){
     // Load parameters
     loadPersistentSettings(IXTLI_CONF_FILEPATH);
 
-    connect_wifi(global_params.wifi_ssid, global_params.wifi_pass);
-    gpio_reset_pin(4);
-    /* Set the GPIO as a push/pull output */
-    gpio_set_direction(4, GPIO_MODE_OUTPUT);
+    connect_wifi(global_params.project_name, global_params.wifi_ssid, global_params.wifi_pass);
+    char ip_address[16] = {0};
+    get_ip_address(ip_address, 16);
 
-    if (wifi_connect_status)
+    if (!wifi_connect_status)
     {
-        setup_api_server();
-        setup_stream_server(global_params.cam_frame_size, global_params.cam_jpeg_quality);
-        
+        ESP_LOGI(global_params.project_name, "Failed to connected with Wi-Fi, check your network Credentials\n");
+        // Wait 60 seconds before restarting
+        int wait = 60;
+        while (wait > 0) {
+            if (wait % 10 == 0) {
+                ESP_LOGI(global_params.project_name, "Restarting in %d seconds...", wait);
+            }
+            vTaskDelay(1000 / portTICK_PERIOD_MS);
+            wait--;
+        }
+        ESP_LOGI(global_params.project_name, "Restarting now...");
+        // Restart the ESP32
+        esp_restart();
+        return;
     }
-    else
-        ESP_LOGI(TAG, "Failed to connected with Wi-Fi, check your network Credentials\n");
+    setup_api_server(global_params.authkey);
+    // If IXTLI_PHOTOBOOTH is not defined, start the camera server
+    #ifdef IXTLI_PHOTOBOOTH
+        ESP_LOGI(global_params.project_name, "Ixtli in photobooth mode");
+    #elif BOARD_XIAO_ESP32S3
+        ESP_LOGI(global_params.project_name, "Ixtli in video mode");
+    #endif
+
+    esp_err_t err = setup_stream_server(global_params.cam_frame_size, global_params.cam_jpeg_quality);
+    if (err != ESP_OK)
+    {
+        ESP_LOGE(TAG, "Failed to setup stream server: %s", esp_err_to_name(err));
+        return;
+    }
+    ESP_LOGI(TAG, "Camera Ready! Use 'http://%s' to connect", ip_address);
     
+    greeting_led();
+
 }

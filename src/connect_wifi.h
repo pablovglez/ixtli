@@ -19,6 +19,10 @@
 
 extern int wifi_connect_status;
 
-void connect_wifi(char* wifi_ssid, char * wifi_password);
+void get_mac_address(uint8_t *mac);
+
+void get_ip_address(char *ip_address, size_t size);
+
+void connect_wifi(char* project_name, char* wifi_ssid, char * wifi_password);
 
 #endif

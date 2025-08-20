@@ -5,13 +5,15 @@
 
 static const char *TAG = "IXTLI_CONF";
 const char *g_params_names[] = {
+    "project_name",
     "wifi_ssid",
     "wifi_pass",
     "cam_jpeg_quality",
     "cam_frame_size",
+    "authkey"
     };
 
-IxtliPersistentSettings global_params = {"fake_ap", "dummy", 1, 1};
+IxtliPersistentSettings global_params = {"ESP32", "fake_ap", "dummy", 1, 1, "authkey"};
 
 int dloadPersistentSettings(const char* filename) {
 
@@ -19,14 +21,20 @@ int dloadPersistentSettings(const char* filename) {
 }
 
 int loadPersistentSettings(const char* filename) {
-    IxtliParamEnum next = WF_SSID;
+    IxtliParamEnum next = PROJECT_NAME;
     char line[CONF_LINE_SIZE];
 
     FILE *conf_file = fopen(filename, "r");
     while (fgets(line, CONF_LINE_SIZE, conf_file)) {
         line[strcspn(line, "\n")] = 0;
+        // Skip empty lines and comment lines
+        if (line[0] == '\0' || line[0] == ';' || line[0] == '#') continue;
         const char* val = strrchr(line, '=') + 1; // +1 to remove the '=' char
         switch (next) {
+        case PROJECT_NAME:
+            strcpy(global_params.project_name, val);
+            next = WF_SSID;
+            break;
         case WF_SSID:
             strcpy(global_params.wifi_ssid, val);
             next = WF_PASS;
@@ -41,7 +49,11 @@ int loadPersistentSettings(const char* filename) {
             break;
         case CAM_FRAME_SIZE:
             global_params.cam_frame_size = atoi(val);
-            next = PARAM_END;
+            next = AUTHKEY;
+            break;
+        case AUTHKEY:
+            strcpy(global_params.authkey, val);
+            next =PARAM_END;
             break;
         case PARAM_END:
         default:
