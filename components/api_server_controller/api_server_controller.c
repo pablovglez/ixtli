@@ -20,7 +20,7 @@
 #define LEDC_CHANNEL LEDC_CHANNEL_0
 #define LEDC_TIMER   LEDC_TIMER_0
 #ifdef BOARD_XIAO_ESP32S3
-#define LEDC_OUTPUT_IO LED_GPIO_NUM // Note: No LED on Xiao ESP32S3
+#define LEDC_OUTPUT_IO 21 // Note: No LED on Xiao ESP32S3
 #else
 #define LEDC_OUTPUT_IO 4 // GPIO 4 for LED flash
 #endif

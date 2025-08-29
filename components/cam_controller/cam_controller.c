@@ -1,4 +1,3 @@
-#include <lwip/sockets.h>
 #include "driver/gpio.h"
 #include "esp_timer.h"
 #include <lwip/sockets.h>
@@ -72,6 +71,12 @@ static esp_err_t init_camera(int cam_frame_size, int cam_jpeg_quality)
     return ESP_OK;
 }
 
+void setup_camera(int cam_frame_size, int cam_jpeg_quality){
+    if (init_camera(cam_frame_size, cam_jpeg_quality) != ESP_OK) {
+        ESP_LOGE(TAG, "Camera initialization failed");
+    }
+}
+
 void do_transmit(const int sock){
 
     camera_fb_t * fb = NULL;
@@ -138,7 +143,7 @@ void do_transmit(const int sock){
 static int print_reg(char * p, sensor_t * s, uint16_t reg, uint32_t mask){
     return sprintf(p, "\"0x%x\":%u,", reg, s->get_reg(s, reg, mask));
 }
-
+/*
 #ifndef IXTLI_PHOTOBOOTH
 void socket_server_task(void *pvParameters) {
     int addr_family = 0;
@@ -236,6 +241,7 @@ void setup_stream_server(int cam_frame_size, int cam_jpeg_quality)
         }
 }
 #endif
+*/
 
 void gen_status_json(char *status){
     sensor_t *s = esp_camera_sensor_get();

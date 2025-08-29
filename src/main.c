@@ -10,8 +10,10 @@
 #include "connect_wifi.h"
 #include "ixtli_config.h"
 #include "parameters.h"
-#include "cam_controller.h"
+//#include "cam_controller.h"
 #include "api_server_controller.h"
+//#include "mic_controller.h"
+#include "stream_controller.h"
 
 
 #include <stdbool.h>
@@ -97,8 +99,32 @@ void app_main(){
         ESP_LOGE(TAG, "Failed to setup stream server: %s", esp_err_to_name(err));
         return;
     }
+
+    setup_audio_server();
+
     ESP_LOGI(TAG, "Camera Ready! Use 'http://%s' to connect", ip_address);
     
+    // Play greeting LED animation to indicate the server is ready
     greeting_led();
+
+    /***** Mic Test *****/
+
+    ESP_LOGI(TAG, "PDM microphone recording example start");
+    // Mount the SDCard for recording the audio file
+    //mount_sdcard();
+    
+    // Acquire a I2S PDM channel for the PDM digital microphone
+    //init_microphone();
+    ESP_LOGI(TAG, "Starting recording ");
+    
+    // Start Recording
+    //record_wav(20); // Record for 20 seconds
+
+    
+
+    //xTaskCreatePinnedToCore(mic_sb_get, "mic_ringbuf_read",
+    //                        4096, NULL, 5, NULL, 1);
+
+    /***** Mic Test *****/
 
 }

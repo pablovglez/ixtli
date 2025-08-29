@@ -4,6 +4,13 @@
 #include "esp_camera.h"
 
 /**
+ * @brief Sets up the camera
+ * @param cam_frame_size Frame size for the camera
+ * @param cam_jpeg_quality JPEG quality for the camera
+ */
+void setup_camera(int cam_frame_size, int cam_jpeg_quality);
+
+/**
  * @brief Initiates cam and streaming server
  * @param cam_frame_size Frame size for the camera
  * @param cam_jpeg_quality JPEG quality for the camera
@@ -11,7 +18,7 @@
  * This function initializes the camera with the specified frame size and JPEG quality,
  * and starts the streaming server to transmit camera frames.
  */
-esp_err_t setup_stream_server(int cam_frame_size, int cam_jpeg_quality);
+void do_transmit(const int sock);
 
 /**
  * @brief Processes the command
