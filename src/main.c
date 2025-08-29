@@ -100,31 +100,14 @@ void app_main(){
         return;
     }
 
+    #ifndef IXTLI_PHOTOBOOTH
+    // In photobooth mode, we do not use the audio server
     setup_audio_server();
+    #endif
 
     ESP_LOGI(TAG, "Camera Ready! Use 'http://%s' to connect", ip_address);
     
     // Play greeting LED animation to indicate the server is ready
     greeting_led();
-
-    /***** Mic Test *****/
-
-    ESP_LOGI(TAG, "PDM microphone recording example start");
-    // Mount the SDCard for recording the audio file
-    //mount_sdcard();
-    
-    // Acquire a I2S PDM channel for the PDM digital microphone
-    //init_microphone();
-    ESP_LOGI(TAG, "Starting recording ");
-    
-    // Start Recording
-    //record_wav(20); // Record for 20 seconds
-
-    
-
-    //xTaskCreatePinnedToCore(mic_sb_get, "mic_ringbuf_read",
-    //                        4096, NULL, 5, NULL, 1);
-
-    /***** Mic Test *****/
 
 }

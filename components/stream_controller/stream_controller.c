@@ -48,10 +48,7 @@ void socket_server_task(void *pvParameters) {
     while (1) {
 
         struct sockaddr_in client_addr;
-        struct sockaddr_in audio_client_addr;
         socklen_t client_addr_len = sizeof(client_addr);
-        socklen_t audio_client_addr_len = sizeof(audio_client_addr);
-
 
         int client_sock = accept(listen_sock, (struct sockaddr *)&client_addr, &client_addr_len);
         if (client_sock < 0) {
