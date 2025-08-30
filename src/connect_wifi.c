@@ -4,7 +4,7 @@
 #include "esp_mac.h"
 
 int wifi_connect_status = 0;
-static const char *TAG = "Connect_WiFi";
+static const char *TAG = "WIFI";
 int s_retry_num = 0;
 
 #define MAXIMUM_RETRY 6

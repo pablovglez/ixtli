@@ -10,3 +10,5 @@ sdkconfig.*
 Kconfig
 ixtli.code-workspace
 dependencies.lock
+log_dump.bin
+parsed_logs.txt
