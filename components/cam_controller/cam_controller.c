@@ -6,12 +6,6 @@
 #include "esp_http_server.h"
 #include "esp_camera.h"
 
-#ifdef BOARD_ESP32CAM
-    #define CAMERA_MODEL_AI_THINKER
-#elif BOARD_XIAO_ESP32S3
-    #define CAMERA_MODEL_XIAO_ESP32S3 // Has PSRAM
-#endif
-
 #include "camera_pins.h"
 #define CONFIG_XCLK_FREQ 20000000
 #define LED_LEDC_CHANNEL 2 //Using different ledc channel/timer than camera
