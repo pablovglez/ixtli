@@ -10,3 +10,5 @@ sdkconfig.*
 Kconfig
 ixtli.code-workspace
 dependencies.lock
+managed_components/
+components/espressif__esp32-camera
