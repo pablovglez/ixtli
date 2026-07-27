@@ -152,3 +152,8 @@ void connect_wifi(char* project_name, char* wifi_ssid, char * wifi_password)
     }
     vEventGroupDelete(s_wifi_event_group);
 }
+
+bool is_wifi_connected()
+{
+    return wifi_connect_status;
+}

@@ -141,7 +141,6 @@ void audio_socket_server_task(void *pvParameters) {
 
     vTaskDelete(NULL);
 }
-#endif
 
 esp_err_t setup_audio_server(void)
 {
@@ -151,6 +150,7 @@ esp_err_t setup_audio_server(void)
 
     return ESP_OK;
 }
+#endif
 
 esp_err_t setup_stream_server(int cam_frame_size, int cam_jpeg_quality)
 {

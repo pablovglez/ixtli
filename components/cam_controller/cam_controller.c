@@ -8,12 +8,16 @@
 
 #ifdef BOARD_ESP32CAM
     #define CAMERA_MODEL_AI_THINKER
+    #define CONFIG_XCLK_FREQ 20000000
 #elif BOARD_XIAO_ESP32S3
     #define CAMERA_MODEL_XIAO_ESP32S3 // Has PSRAM
+    #define CONFIG_XCLK_FREQ 20000000
+#elif BOARD_ESP32S3_ETH_CAM
+    #define CAMERA_MODEL_ESP32S3_ETH_CAM // Has PSRAM
+    #define CONFIG_XCLK_FREQ 10000000
 #endif
 
 #include "camera_pins.h"
-#define CONFIG_XCLK_FREQ 20000000
 #define LED_LEDC_CHANNEL 2 //Using different ledc channel/timer than camera
 
 
