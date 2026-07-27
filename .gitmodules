@@ -1,0 +1,4 @@
+[submodule "components/ethernet_component"]
+	path = components/ethernet_component
+	url = git@github.com:pablovglez/esp_eth_controller.git
+	branch = develop
