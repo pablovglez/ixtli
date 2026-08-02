@@ -11,19 +11,13 @@
 #include <time.h>
 #include <sys/time.h>
 #include "esp_camera.h"
-
-#include "cam_controller.h"
+#include "camera_controller.h"
 
 // Max value for LEDC duty cycle (8-bit resolution)
-// 2^8 - 1 = 255
-#define CONFIG_LED_MAX_INTENSITY 255 
+
+#define CONFIG_LED_MAX_INTENSITY 255  // 2^8 - 1 = 255
 #define LEDC_CHANNEL LEDC_CHANNEL_0
 #define LEDC_TIMER   LEDC_TIMER_0
-#ifdef BOARD_XIAO_ESP32S3
-#define LEDC_OUTPUT_IO 21 // Note: No LED on Xiao ESP32S3
-#else
-#define LEDC_OUTPUT_IO 4 // GPIO 4 for LED flash
-#endif
 
 static const char *TAG = "API-SERVER";
 
@@ -166,8 +160,6 @@ static esp_err_t cmd_handler(httpd_req_t *req)
     return httpd_resp_send(req, NULL, 0);
 }
 
-
-
 static esp_err_t snapshot_handler(httpd_req_t *req){
     esp_err_t res = ESP_OK;
 
@@ -197,36 +189,6 @@ static esp_err_t snapshot_protected(httpd_req_t *req){
     }
     return snapshot_handler(req);
 }
-
-
-static esp_err_t xclk_handler(httpd_req_t *req)
-{
-    char *buf = NULL;
-    char _xclk[32];
-
-    if (parse_get(req, &buf) != ESP_OK) {
-        return ESP_FAIL;
-    }
-    if (httpd_query_key_value(buf, "xclk", _xclk, sizeof(_xclk)) != ESP_OK) {
-        free(buf);
-        httpd_resp_send_404(req);
-        return ESP_FAIL;
-    }
-    free(buf);
-
-    int xclk = atoi(_xclk);
-    ESP_LOGI(TAG, "Set XCLK: %d MHz", xclk);
-
-    sensor_t *s = esp_camera_sensor_get();
-    int res = s->set_xclk(s, LEDC_TIMER_0, xclk);
-    if (res) {
-        return httpd_resp_send_500(req);
-    }
-
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
-    return httpd_resp_send(req, NULL, 0);
-}
-
 
 static esp_err_t status_handler(httpd_req_t *req)
 {
@@ -356,11 +318,15 @@ void setupLedFlash()
 
 static esp_err_t enable_led(httpd_req_t *req)
 { // Turn LED On or Off
+#if LEDC_OUTPUT_IO > 0
     led_bool = (led_bool + 1 ) % 2 ;
     #ifdef DEBUG_ON
     ESP_LOGI(TAG, "LED flash is now %s", led_bool ? "ON" : "OFF");
     #endif
     set_led_intensity(led_bool ? CONFIG_LED_MAX_INTENSITY : 0);
+#else
+    ESP_LOGI(TAG, "LED flash is not available");
+#endif
 
     return send_web_page(req);
 }

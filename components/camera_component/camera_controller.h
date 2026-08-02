@@ -1,5 +1,9 @@
-#ifndef __CAM_CONTROLLER_H__
-#define __CAM_CONTROLLER_H__
+//
+// Created by efisio on 8/2/26.
+//
+
+#ifndef IXTLI_CAMERA_CONTROLLER_H
+#define IXTLI_CAMERA_CONTROLLER_H
 
 #include "esp_camera.h"
 
@@ -46,7 +50,7 @@ esp_err_t take_snapshot(camera_fb_t *snapshot);
  * This function releases the frame buffer back to the camera driver after processing.
  * It is important to call this function after using the frame buffer to avoid memory leaks.
  */
-void return_frame_buffer(void* snapshot);
+void return_frame_buffer(camera_fb_t* snapshot);
 
 /**
  * @brief Generates the status json
@@ -58,8 +62,8 @@ void gen_status_json(char *status);
 
 /**
  * @brief Sets up the LED flash
- * 
+ *
  * This function configures the LED flash for the camera.
  */
 
-#endif
+#endif //IXTLI_CAMERA_CONTROLLER_H

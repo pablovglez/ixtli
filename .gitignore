@@ -1,5 +1,5 @@
 .pio
-.vscode/*
+.vscode
 bin
 lib/esp32-camera
 lib/python*

@@ -1,26 +1,17 @@
+//
+// Created by efisio on 8/2/26.
+//
 #include "driver/gpio.h"
 #include "esp_timer.h"
-#include <lwip/sockets.h>
-
 #include "esp_log.h"
-#include "esp_http_server.h"
+#include <lwip/sockets.h>
 #include "esp_camera.h"
-
-#ifdef BOARD_ESP32CAM
-    #define CAMERA_MODEL_AI_THINKER
-    #define CONFIG_XCLK_FREQ 20000000
-#elif BOARD_XIAO_ESP32S3
-    #define CAMERA_MODEL_XIAO_ESP32S3 // Has PSRAM
-    #define CONFIG_XCLK_FREQ 20000000
-#elif BOARD_ESP32S3_ETH_CAM
-    #define CAMERA_MODEL_ESP32S3_ETH_CAM // Has PSRAM
-    #define CONFIG_XCLK_FREQ 10000000
-#endif
-
+#include "esp_http_server.h"
 #include "camera_pins.h"
-#define LED_LEDC_CHANNEL 2 //Using different ledc channel/timer than camera
+#include "camera_controller.h"
 
-
+#define CONFIG_XCLK_FREQ 20000000
+#define LED_LEDC_CHANNEL 2
 
 typedef struct
 {
@@ -31,54 +22,53 @@ typedef struct
 static const char *TAG = "CAM-CONTROLLER";
 
 #define PART_BOUNDARY "123456789000000000000987654321"
-static const char *_STREAM_CONTENT_TYPE = "multipart/x-mixed-replace;boundary=" PART_BOUNDARY;
-static const char *_STREAM_BOUNDARY = "\r\n--" PART_BOUNDARY "\r\n";
-static const char *_STREAM_PART_HTTP = "Content-Type: image/jpeg\r\nContent-Length: %u\r\nX-Timestamp: %d.%06d\r\n\r\n";
 static const char* _STREAM_PART = "Content-Type: image/jpeg\r\nContent-Length: %u\r\n\r\n";
-
 
 static esp_err_t init_camera(int cam_frame_size, int cam_jpeg_quality)
 {
     camera_config_t camera_config = {
-      .pin_pwdn  = PWDN_GPIO_NUM,
-      .pin_reset = RESET_GPIO_NUM,
-      .pin_xclk = XCLK_GPIO_NUM,
-      .pin_sscb_sda = SIOD_GPIO_NUM,
-      .pin_sscb_scl = SIOC_GPIO_NUM,
-      .pin_d7 = Y9_GPIO_NUM,
-      .pin_d6 = Y8_GPIO_NUM,
-      .pin_d5 = Y7_GPIO_NUM,
-      .pin_d4 = Y6_GPIO_NUM,
-      .pin_d3 = Y5_GPIO_NUM,
-      .pin_d2 = Y4_GPIO_NUM,
-      .pin_d1 = Y3_GPIO_NUM,
-      .pin_d0 = Y2_GPIO_NUM,
-      .pin_vsync = VSYNC_GPIO_NUM,
-      .pin_href = HREF_GPIO_NUM,
-      .pin_pclk = PCLK_GPIO_NUM,
-      .xclk_freq_hz = CONFIG_XCLK_FREQ,
-      .ledc_timer = LEDC_TIMER_0,
-      .ledc_channel = LEDC_CHANNEL_0,
-      .pixel_format = PIXFORMAT_JPEG,
-      .frame_size = (framesize_t)cam_frame_size,
-      .jpeg_quality = cam_jpeg_quality,
-      .fb_count = 1,
-      .fb_location = CAMERA_FB_IN_PSRAM,
-      .grab_mode = CAMERA_GRAB_WHEN_EMPTY
-    };
+        .pin_pwdn  = PWDN_GPIO_NUM,
+        .pin_reset = RESET_GPIO_NUM,
+        .pin_xclk = XCLK_GPIO_NUM,
+        .pin_sscb_sda = SIOD_GPIO_NUM,
+        .pin_sscb_scl = SIOC_GPIO_NUM,
+        .pin_d7 = Y9_GPIO_NUM,
+        .pin_d6 = Y8_GPIO_NUM,
+        .pin_d5 = Y7_GPIO_NUM,
+        .pin_d4 = Y6_GPIO_NUM,
+        .pin_d3 = Y5_GPIO_NUM,
+        .pin_d2 = Y4_GPIO_NUM,
+        .pin_d1 = Y3_GPIO_NUM,
+        .pin_d0 = Y2_GPIO_NUM,
+        .pin_vsync = VSYNC_GPIO_NUM,
+        .pin_href = HREF_GPIO_NUM,
+        .pin_pclk = PCLK_GPIO_NUM,
+        .xclk_freq_hz = CONFIG_XCLK_FREQ,
+        .ledc_timer = LEDC_TIMER_0,
+        .ledc_channel = LEDC_CHANNEL_0,
+        .pixel_format = PIXFORMAT_JPEG,
+        .frame_size = (framesize_t)cam_frame_size,
+        .jpeg_quality = cam_jpeg_quality,
+        .fb_count = 2,
+        .fb_location = CAMERA_FB_IN_PSRAM,
+        .grab_mode = CAMERA_GRAB_LATEST
+      };
 
     esp_err_t err = esp_camera_init(&camera_config);
     if (err != ESP_OK)
     {
         return err;
     }
+    ESP_LOGI(TAG, "Camera init successfully");
     return ESP_OK;
 }
+
 
 void setup_camera(int cam_frame_size, int cam_jpeg_quality){
     if (init_camera(cam_frame_size, cam_jpeg_quality) != ESP_OK) {
         ESP_LOGE(TAG, "Camera initialization failed");
     }
+
 }
 
 void do_transmit(const int sock){
@@ -118,9 +108,9 @@ void do_transmit(const int sock){
             size_t hlen = snprintf((char *)part_buf, 64, _STREAM_PART, _jpg_buf_len);
             tx_len = send(sock, (const char *)part_buf, hlen, 0);
             tx_len  = send(sock, (const char *)_jpg_buf, _jpg_buf_len, 0);
-            #ifdef DEBUG_ON
+#ifdef DEBUG_ON
             ESP_LOGI(TAG, "SOCKET: %u ", tx_len);
-            #endif
+#endif
         }
         if(fb->format != PIXFORMAT_JPEG){
             free(_jpg_buf);
@@ -133,11 +123,11 @@ void do_transmit(const int sock){
         int64_t frame_time = fr_end - last_frame;
         last_frame = fr_end;
         frame_time /= 1000;
-        #ifdef DEBUG_ON
+#ifdef DEBUG_ON
         ESP_LOGI(TAG, "MJPG: %luKB %lums (%.1ffps)",
         (uint32_t)(_jpg_buf_len/1024),
         (uint32_t)frame_time, 1000.0 / (uint32_t)frame_time);
-        #endif
+#endif
 
 
     }
@@ -191,7 +181,7 @@ void gen_status_json(char *status){
 
 }
 
-err_t process_cmd(char *variable, int val){
+esp_err_t process_cmd(char *variable, int val){
     sensor_t *s = esp_camera_sensor_get();
 
     int res = 0;
@@ -259,7 +249,7 @@ err_t process_cmd(char *variable, int val){
     return ESP_OK;
 }
 
-err_t take_snapshot(camera_fb_t *fb){
+esp_err_t take_snapshot(camera_fb_t *fb){
     esp_err_t res = ESP_OK;
     size_t _jpg_buf_len;
     uint8_t * _jpg_buf;
@@ -275,7 +265,7 @@ err_t take_snapshot(camera_fb_t *fb){
         else
             break;
     }
-    
+
     if (!fb)
     {
         ESP_LOGE(TAG, "Camera capture failed");

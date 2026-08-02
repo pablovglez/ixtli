@@ -1,11 +1,16 @@
 #include <lwip/sockets.h>
 #include "esp_log.h"
-#include "cam_controller.h"
+#include "camera_controller.h"
 #include "mic_controller.h"
 
 static const char *TAG = "STREAM-CONTROLLER";
+#if !defined(STREAM_VIDEO_PORT)
+    #define STREAM_VIDEO_PORT   16385
+#endif
+#if !defined(STREAM_AUDIO_PORT)
+    #define STREAM_AUDIO_PORT   16386
+#endif
 
-#ifndef IXTLI_PHOTOBOOTH
 void socket_server_task(void *pvParameters) {
     int addr_family = 0;
     int ip_protocol = 0;
@@ -14,7 +19,7 @@ void socket_server_task(void *pvParameters) {
     struct sockaddr_in server_addr;
     server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(16385);
+    server_addr.sin_port = htons(STREAM_VIDEO_PORT);
 
     addr_family = AF_INET;
     ip_protocol = IPPROTO_IP;
@@ -74,7 +79,7 @@ void socket_server_task(void *pvParameters) {
     vTaskDelete(NULL);
 }
 
-#ifdef BOARD_XIAO_ESP32S3
+#ifdef STREAM_AUDIO
 void audio_socket_server_task(void *pvParameters) {
     int addr_family = 0;
     int ip_protocol = 0;
@@ -83,7 +88,7 @@ void audio_socket_server_task(void *pvParameters) {
     struct sockaddr_in audio_server_addr;
     audio_server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     audio_server_addr.sin_family = AF_INET;
-    audio_server_addr.sin_port = htons(16386);
+    audio_server_addr.sin_port = htons(STREAM_AUDIO_PORT);
 
     addr_family = AF_INET;
     ip_protocol = IPPROTO_IP;
@@ -165,10 +170,3 @@ esp_err_t setup_stream_server(int cam_frame_size, int cam_jpeg_quality)
 
     return ESP_OK;
 }
-
-#else
-void setup_stream_server(int cam_frame_size, int cam_jpeg_quality)
-{
-    setup_camera(cam_frame_size, cam_jpeg_quality);
-}
-#endif

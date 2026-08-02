@@ -1,3 +1,4 @@
 idf_component_register(SRCS "stream_controller.c"
+    PRIV_REQUIRES esp32-camera camera_component mic_component
     INCLUDE_DIRS "."
-    PRIV_REQUIRES esp32-camera cam_controller mic_controller)
+)
