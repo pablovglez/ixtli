@@ -10,3 +10,4 @@ sdkconfig.*
 Kconfig
 ixtli.code-workspace
 dependencies.lock
+managed_components

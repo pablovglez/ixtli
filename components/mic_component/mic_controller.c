@@ -1,6 +1,9 @@
 #include <string.h>
 #include <sys/unistd.h>
 #include <sys/stat.h>
+ #include "freertos/FreeRTOS.h"
+ #include "freertos/task.h"
+ #include "freertos/semphr.h"
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "driver/i2s_pdm.h"

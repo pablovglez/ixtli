@@ -1,5 +1,7 @@
 #include <esp_system.h>
 #include <nvs_flash.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include <stdbool.h>
 #include <inttypes.h>
 #include "driver/gpio.h"
@@ -66,10 +68,10 @@ void app_main(){
     bool wifi_connected = is_wifi_connected();
     if (!wifi_connected)
     {
-        ESP_LOGI(global_params.project_name, "Failed to connected with Wi-Fi, check your network Credentials\n");
+        ESP_LOGI(global_params.project_name, "Failed to connected to Wi-Fi, check your network Credentials\n");
         // Wait 60 seconds before restarting
         int wait = 60;
-        while (wait > 0) {
+        while (wait > 10) {
             if (wait % 10 == 0) {
                 wifi_connected = is_wifi_connected();
                 if (wifi_connected) {
@@ -81,8 +83,6 @@ void app_main(){
             wait--;
         }
         if (wait <= 0) {
-            ESP_LOGE(global_params.project_name, "Failed to connect to Ethernet, check your network connection");
-
             ESP_LOGI(global_params.project_name, "Restarting now...");
             vTaskDelay(500 / portTICK_PERIOD_MS);
             // Restart the ESP32

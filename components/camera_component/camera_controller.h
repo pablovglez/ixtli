@@ -12,7 +12,7 @@
  * @param cam_frame_size Frame size for the camera
  * @param cam_jpeg_quality JPEG quality for the camera
  */
-void setup_camera(int cam_frame_size, int cam_jpeg_quality);
+esp_err_t setup_camera(int cam_frame_size, int cam_jpeg_quality);
 
 /**
  * @brief Initiates cam and streaming server

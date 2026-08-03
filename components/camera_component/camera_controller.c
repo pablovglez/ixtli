@@ -64,11 +64,12 @@ static esp_err_t init_camera(int cam_frame_size, int cam_jpeg_quality)
 }
 
 
-void setup_camera(int cam_frame_size, int cam_jpeg_quality){
+esp_err_t setup_camera(int cam_frame_size, int cam_jpeg_quality){
     if (init_camera(cam_frame_size, cam_jpeg_quality) != ESP_OK) {
         ESP_LOGE(TAG, "Camera initialization failed");
+        return ESP_FAIL;
     }
-
+    return ESP_OK;
 }
 
 void do_transmit(const int sock){

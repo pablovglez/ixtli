@@ -1,4 +1,7 @@
+#include <errno.h>
 #include <lwip/sockets.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "esp_log.h"
 #include "camera_controller.h"
 #include "mic_controller.h"
@@ -58,7 +61,9 @@ void socket_server_task(void *pvParameters) {
         int client_sock = accept(listen_sock, (struct sockaddr *)&client_addr, &client_addr_len);
         if (client_sock < 0) {
             ESP_LOGE(TAG, "Unable to accept connection: errno %d", errno);
-            break;
+            close(listen_sock);
+            vTaskDelete(NULL);
+            return;
         }
 
         setsockopt(client_sock, IPPROTO_TCP, TCP_KEEPIDLE, &err, sizeof(int));
@@ -160,7 +165,10 @@ esp_err_t setup_audio_server(void)
 esp_err_t setup_stream_server(int cam_frame_size, int cam_jpeg_quality)
 {
     // Setup the camera
-    setup_camera(cam_frame_size, cam_jpeg_quality);
+    if (setup_camera(cam_frame_size, cam_jpeg_quality) != ESP_OK) {
+        ESP_LOGE(TAG, "Camera setup failed");
+        return ESP_FAIL;
+    }
 
     #ifdef BOARD_XIAO_ESP32S3
         xTaskCreate(socket_server_task, "socket_server_task", 6144 * 5, NULL, 5, NULL);

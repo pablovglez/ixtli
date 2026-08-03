@@ -2,6 +2,7 @@
 #include "esp_netif.h"
 #include "lwip/apps/mdns.h"
 #include "esp_mac.h"
+#include <stdbool.h>
 
 int wifi_connect_status = 0;
 static const char *TAG = "Connect_WiFi";
