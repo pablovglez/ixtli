@@ -25,4 +25,6 @@ void connect_wifi(char* project_name, char* wifi_ssid, char * wifi_password);
 
 bool is_wifi_connected();
 
+void reboot_on_wifi_disconnection(int timeout_sec);
+
 #endif

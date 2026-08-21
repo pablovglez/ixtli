@@ -190,6 +190,18 @@ static esp_err_t snapshot_protected(httpd_req_t *req){
     return snapshot_handler(req);
 }
 
+static esp_err_t reboot_handler(httpd_req_t *req){
+    /*if(auth_middleware(req) != ESP_OK){
+        httpd_resp_send_err(req, HTTPD_401_UNAUTHORIZED, "Failed to authenticate");
+        return ESP_FAIL;
+    }*/
+    ESP_LOGI(TAG, "Received reboot request. Rebooting in 5 seconds...");
+    httpd_resp_send(req, "Rebooting...", strlen("Rebooting..."));
+    vTaskDelay(5000 / portTICK_PERIOD_MS);
+    esp_restart();
+    return ESP_OK;
+}
+
 static esp_err_t status_handler(httpd_req_t *req)
 {
     static char json_response[1024];
@@ -371,6 +383,13 @@ httpd_uri_t ota_uri = {
     .user_ctx = NULL
 };
 
+httpd_uri_t reboot_uri = {
+    .uri = "/reboot",
+    .method = HTTP_POST,
+    .handler = reboot_handler,
+    .user_ctx = NULL
+};
+
 void initialize_sntp() {
     sntp_setoperatingmode(SNTP_OPMODE_POLL);
     sntp_setservername(0, "pool.ntp.org");
@@ -422,6 +441,7 @@ void setup_api_server(char * given_key)
         httpd_register_uri_handler(api_httpd, &uri_flash);
         httpd_register_uri_handler(api_httpd, &cmd_uri);
         httpd_register_uri_handler(api_httpd, &snapshot_uri);
+        httpd_register_uri_handler(api_httpd, &reboot_uri);
     }
 
     ESP_LOGI(TAG, "API Server is up and running\n");

@@ -51,7 +51,7 @@ void socket_server_task(void *pvParameters) {
         return;
     }
 
-    ESP_LOGI(TAG, "Socket server started. Waiting for client connections...");
+    ESP_LOGI(TAG, "Socket server started on port %d. Waiting for client connections...", ntohs(server_addr.sin_port));
 
     while (1) {
 
@@ -119,7 +119,7 @@ void audio_socket_server_task(void *pvParameters) {
         // We don't return as we can still serve video
     }
 
-    ESP_LOGI(TAG, "Audio socket server started. Waiting for client connections...");
+    ESP_LOGI(TAG, "Audio socket server started on port %d. Waiting for client connections...", ntohs(audio_server_addr.sin_port));
 
     while (1) {
 
