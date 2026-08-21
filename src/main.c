@@ -68,26 +68,7 @@ void app_main(){
     bool wifi_connected = is_wifi_connected();
     if (!wifi_connected)
     {
-        ESP_LOGI(global_params.project_name, "Failed to connected to Wi-Fi, check your network Credentials\n");
-        // Wait 60 seconds before restarting
-        int wait = 60;
-        while (wait > 10) {
-            if (wait % 10 == 0) {
-                wifi_connected = is_wifi_connected();
-                if (wifi_connected) {
-                    break;
-                }
-                ESP_LOGI(global_params.project_name, "Restarting in %d seconds...", wait);
-            }
-            vTaskDelay(1000 / portTICK_PERIOD_MS);
-            wait--;
-        }
-        if (wait <= 0) {
-            ESP_LOGI(global_params.project_name, "Restarting now...");
-            vTaskDelay(500 / portTICK_PERIOD_MS);
-            // Restart the ESP32
-            esp_restart();
-        }
+        reboot_on_wifi_disconnection(60);
     }
 
     char ip_address[16] = {0};
@@ -100,27 +81,7 @@ void app_main(){
     }
     if (!eth_connected)
     {
-        // Wait 60 seconds before restarting
-        int wait = 60;
-        while (wait > 10) {
-            if (wait % 10 == 0) {
-                eth_connected = is_eth_connected();
-                if (eth_connected) {
-                    break;
-                }
-                ESP_LOGI(global_params.project_name, "Restarting in %d seconds...", wait);
-            }
-            vTaskDelay(1000 / portTICK_PERIOD_MS);
-            wait--;
-        }
-        if (wait <= 0) {
-            ESP_LOGE(global_params.project_name, "Failed to connect to Ethernet, check your network connection");
-
-            ESP_LOGI(global_params.project_name, "Restarting now...");
-            vTaskDelay(500 / portTICK_PERIOD_MS);
-            // Restart the ESP32
-            esp_restart();
-        }
+        reboot_on_eth_disconnection(60);
     }
     char ip_address[16] = {0};
     get_ip_address_eth(ip_address, 16);

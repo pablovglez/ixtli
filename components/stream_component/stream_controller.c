@@ -51,7 +51,7 @@ void socket_server_task(void *pvParameters) {
         return;
     }
 
-    ESP_LOGI(TAG, "Socket server started. Waiting for client connections...");
+    ESP_LOGI(TAG, "Socket server started on port %d. Waiting for client connections...", ntohs(server_addr.sin_port));
 
     while (1) {
 
