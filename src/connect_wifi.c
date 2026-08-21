@@ -2,8 +2,9 @@
 #include "esp_netif.h"
 #include "lwip/apps/mdns.h"
 #include "esp_mac.h"
+#include <stdbool.h>
 
-int wifi_connect_status = 0;
+bool wifi_connected = false;
 static const char *TAG = "Connect_WiFi";
 int s_retry_num = 0;
 
@@ -16,6 +17,31 @@ EventGroupHandle_t s_wifi_event_group;
  * - we failed to connect after the maximum amount of retries */
 #define WIFI_CONNECTED_BIT BIT0
 #define WIFI_FAIL_BIT BIT1
+
+void reboot_on_wifi_disconnection(int timeout_sec) {
+    ESP_LOGI(TAG, "Failed to connected with Wi-Fi, check your network Credentials\n");
+    // Wait 60 seconds before restarting
+    int wait = timeout_sec;
+    while (wait > 0) {
+        if (wait % 10 == 0) {
+            wifi_connected = is_wifi_connected();
+            if (wifi_connected) {
+                break;
+            }
+            ESP_LOGI(TAG, "Restarting in %d seconds...", wait);
+        }
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        wait--;
+    }
+    if (wait < 10) {
+        ESP_LOGE(TAG, "Failed to connect to Wi-Fi, check your network connection");
+
+        ESP_LOGI(TAG, "Restarting now...");
+        vTaskDelay(500 / portTICK_PERIOD_MS);
+        // Restart the ESP32
+        esp_restart();
+    }
+}
 
 static void event_handler(void *arg, esp_event_base_t event_base,
                           int32_t event_id, void *event_data)
@@ -36,8 +62,9 @@ static void event_handler(void *arg, esp_event_base_t event_base,
         {
             xEventGroupSetBits(s_wifi_event_group, WIFI_FAIL_BIT);
         }
-        wifi_connect_status = 0;
+        wifi_connected = false;
         ESP_LOGI(TAG, "connect to the AP fail");
+        reboot_on_wifi_disconnection(60);
     }
     else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP)
     {
@@ -45,7 +72,7 @@ static void event_handler(void *arg, esp_event_base_t event_base,
         ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
         s_retry_num = 0;
         xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
-        wifi_connect_status = 1;
+        wifi_connected = true;
     }
 }
 
@@ -151,4 +178,9 @@ void connect_wifi(char* project_name, char* wifi_ssid, char * wifi_password)
         ESP_LOGE(TAG, "UNEXPECTED EVENT");
     }
     vEventGroupDelete(s_wifi_event_group);
+}
+
+bool is_wifi_connected()
+{
+    return wifi_connected;
 }

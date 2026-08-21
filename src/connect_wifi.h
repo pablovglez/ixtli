@@ -17,12 +17,14 @@
 #include <lwip/api.h>
 #include <lwip/netdb.h>
 
-extern int wifi_connect_status;
-
 void get_mac_address(uint8_t *mac);
 
 void get_ip_address(char *ip_address, size_t size);
 
 void connect_wifi(char* project_name, char* wifi_ssid, char * wifi_password);
+
+bool is_wifi_connected();
+
+void reboot_on_wifi_disconnection(int timeout_sec);
 
 #endif
