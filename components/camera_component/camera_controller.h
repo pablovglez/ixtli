@@ -36,23 +36,6 @@ void do_transmit(const int sock);
 esp_err_t process_cmd(char *variable, int val);
 
 /**
- * @brief Takes a snapshot
- * @param snapshot Pointer to the camera frame buffer
- * @return Error code
- * This function captures a snapshot from the camera and returns it in the provided frame buffer.
- * If the capture fails, it returns ESP_FAIL.
- */
-esp_err_t take_snapshot(camera_fb_t *snapshot);
-
-/**
- * @brief Returns the frame buffer
- * @param snapshot Pointer to the camera frame buffer
- * This function releases the frame buffer back to the camera driver after processing.
- * It is important to call this function after using the frame buffer to avoid memory leaks.
- */
-void return_frame_buffer(camera_fb_t* snapshot);
-
-/**
  * @brief Generates the status json
  * @param status Pointer to the status string buffer
  * This function generates a JSON string containing the current status of the camera settings.
@@ -65,5 +48,8 @@ void gen_status_json(char *status);
  *
  * This function configures the LED flash for the camera.
  */
+void init_flash();
+
+void enable_flash(bool state);
 
 #endif //IXTLI_CAMERA_CONTROLLER_H

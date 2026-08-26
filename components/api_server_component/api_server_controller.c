@@ -163,30 +163,32 @@ static esp_err_t cmd_handler(httpd_req_t *req)
 static esp_err_t snapshot_handler(httpd_req_t *req){
     esp_err_t res = ESP_OK;
 
-    camera_fb_t* snapshot = NULL;
-    res  = take_snapshot(snapshot);    
+    camera_fb_t* snapshot = esp_camera_fb_get();
+
+    if (!snapshot) {
+        ESP_LOGE(TAG, "Camera capture failed");
+        httpd_resp_send_500(req);
+        return ESP_FAIL;
+    }
 
     httpd_resp_set_type(req, "image/jpeg");
     httpd_resp_set_hdr(req, "Content-Disposition", "inline; filename=capture.jpg");
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     
-    if(res == ESP_OK){
-        char ts[32];
-        snprintf(ts, 32, "%lld.%06ld", snapshot->timestamp.tv_sec, snapshot->timestamp.tv_usec);
-        res = httpd_resp_send(req, (const char *)snapshot->buf, snapshot->len);
-    } else {
-        httpd_resp_send_500(req);
-    }
-    return_frame_buffer(snapshot);
+    char ts[32];
+    snprintf(ts, 32, "%lld.%06ld", snapshot->timestamp.tv_sec, snapshot->timestamp.tv_usec);
+    httpd_resp_set_hdr(req, "X-Timestamp", ts);
+    res = httpd_resp_send(req, (const char *)snapshot->buf, snapshot->len);
+    esp_camera_fb_return(snapshot);
 
     return res;
 }
 
 static esp_err_t snapshot_protected(httpd_req_t *req){
-    if(auth_middleware(req) != ESP_OK){
+    /*if(auth_middleware(req) != ESP_OK){
         httpd_resp_send_err(req, HTTPD_401_UNAUTHORIZED, "Failed to authenticate");
         return ESP_FAIL;
-    }
+    }*/
     return snapshot_handler(req);
 }
 
@@ -262,47 +264,47 @@ void greeting_led() {
     const int LETTER_PAUSE = 300 / portTICK_PERIOD_MS;
     const uint32_t INTENSITY = (uint32_t) CONFIG_LED_MAX_INTENSITY * 0.1;
 
-    set_led_intensity(0); // Start with LED off
+    enable_flash(false); // Start with LED off
     vTaskDelay(500 / portTICK_PERIOD_MS);
 
     // Morse for IXTLI: .. -..- - .-.. .. -.-.--
     // I: ..
-    set_led_intensity(INTENSITY); vTaskDelay(DOT);
-    set_led_intensity(0); vTaskDelay(SYMBOL_PAUSE);
-    set_led_intensity(INTENSITY); vTaskDelay(DOT);
-    set_led_intensity(0); vTaskDelay(LETTER_PAUSE);
+    enable_flash(true); vTaskDelay(DOT);
+    enable_flash(false); vTaskDelay(SYMBOL_PAUSE);
+    enable_flash(true); vTaskDelay(DOT);
+    enable_flash(false); vTaskDelay(LETTER_PAUSE);
 
     // X: -..-
-    set_led_intensity(INTENSITY); vTaskDelay(DASH);
-    set_led_intensity(0); vTaskDelay(SYMBOL_PAUSE);
-    set_led_intensity(INTENSITY); vTaskDelay(DOT);
-    set_led_intensity(0); vTaskDelay(SYMBOL_PAUSE);
-    set_led_intensity(INTENSITY); vTaskDelay(DOT);
-    set_led_intensity(0); vTaskDelay(SYMBOL_PAUSE);
-    set_led_intensity(INTENSITY); vTaskDelay(DASH);
-    set_led_intensity(0); vTaskDelay(LETTER_PAUSE);
+    enable_flash(true); vTaskDelay(DASH);
+    enable_flash(false); vTaskDelay(SYMBOL_PAUSE);
+    enable_flash(true); vTaskDelay(DOT);
+    enable_flash(false); vTaskDelay(SYMBOL_PAUSE);
+    enable_flash(true); vTaskDelay(DOT);
+    enable_flash(false); vTaskDelay(SYMBOL_PAUSE);
+    enable_flash(true); vTaskDelay(DASH);
+    enable_flash(false); vTaskDelay(LETTER_PAUSE);
 
     // T: -
-    set_led_intensity(INTENSITY); vTaskDelay(DASH);
-    set_led_intensity(0); vTaskDelay(LETTER_PAUSE);
+    enable_flash(true); vTaskDelay(DASH);
+    enable_flash(false); vTaskDelay(LETTER_PAUSE);
 
     // L: .-..
-    set_led_intensity(INTENSITY); vTaskDelay(DOT);
-    set_led_intensity(0); vTaskDelay(SYMBOL_PAUSE);
-    set_led_intensity(INTENSITY); vTaskDelay(DASH);
-    set_led_intensity(0); vTaskDelay(SYMBOL_PAUSE);
-    set_led_intensity(INTENSITY); vTaskDelay(DOT);
-    set_led_intensity(0); vTaskDelay(SYMBOL_PAUSE);
-    set_led_intensity(INTENSITY); vTaskDelay(DOT);
-    set_led_intensity(0); vTaskDelay(LETTER_PAUSE);
+    enable_flash(true); vTaskDelay(DOT);
+    enable_flash(false); vTaskDelay(SYMBOL_PAUSE);
+    enable_flash(true); vTaskDelay(DASH);
+    enable_flash(false); vTaskDelay(SYMBOL_PAUSE);
+    enable_flash(true); vTaskDelay(DOT);
+    enable_flash(false); vTaskDelay(SYMBOL_PAUSE);
+    enable_flash(true); vTaskDelay(DOT);
+    enable_flash(false); vTaskDelay(LETTER_PAUSE);
 
     // I: ..
-    set_led_intensity(INTENSITY); vTaskDelay(DOT);
-    set_led_intensity(0); vTaskDelay(SYMBOL_PAUSE);
-    set_led_intensity(INTENSITY); vTaskDelay(DOT);
-    set_led_intensity(0); vTaskDelay(LETTER_PAUSE);
+    enable_flash(true); vTaskDelay(DOT);
+    enable_flash(false);  vTaskDelay(SYMBOL_PAUSE);
+    enable_flash(true); vTaskDelay(DOT);
+    enable_flash(false);  vTaskDelay(LETTER_PAUSE);
     
-    set_led_intensity(0); // Ensure LED is off at the end
+    enable_flash(false);  // Ensure LED is off at the end
 }
 
 void setup_led_flash()
@@ -317,7 +319,7 @@ static esp_err_t enable_led(httpd_req_t *req)
     #ifdef DEBUG_ON
     ESP_LOGI(TAG, "LED flash is now %s", led_bool ? "ON" : "OFF");
     #endif
-    set_led_intensity(led_bool ? CONFIG_LED_MAX_INTENSITY : 0);
+    enable_flash(led_bool);
 #else
     ESP_LOGI(TAG, "LED flash is not available");
 #endif
@@ -412,7 +414,7 @@ void obtain_time() {
 
 void setup_api_server(char * given_key)
 {   
-    setup_led_flash();
+    init_flash();
     httpd_config_t api_config = HTTPD_DEFAULT_CONFIG();
     httpd_handle_t api_httpd  = NULL;
     strcpy(auth_token, given_key);

@@ -13,6 +13,10 @@
 #define CONFIG_XCLK_FREQ 20000000
 #define LED_LEDC_CHANNEL 2
 
+// LED commands
+#define LED_CMD_ON     0x01
+#define LED_CMD_OFF    0x00
+
 typedef struct
 {
     httpd_req_t *req;
@@ -23,6 +27,8 @@ static const char *TAG = "CAM-CONTROLLER";
 
 #define PART_BOUNDARY "123456789000000000000987654321"
 static const char* _STREAM_PART = "Content-Type: image/jpeg\r\nContent-Length: %u\r\n\r\n";
+static bool led_initialized = false;
+int led_pin = FLASH_PIN;
 
 static esp_err_t init_camera(int cam_frame_size, int cam_jpeg_quality)
 {
@@ -63,6 +69,31 @@ static esp_err_t init_camera(int cam_frame_size, int cam_jpeg_quality)
     return ESP_OK;
 }
 
+void init_flash() {
+    gpio_config_t io_conf = {
+        .pin_bit_mask = (1ULL << led_pin),
+        .mode = GPIO_MODE_OUTPUT,
+        .pull_up_en = GPIO_PULLUP_DISABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_DISABLE
+    };
+    gpio_config(&io_conf);
+    gpio_set_level(led_pin, LED_CMD_OFF); // Ensure the led is off
+    ESP_LOGI(TAG, "Led initialized on GPIO %d", led_pin);
+
+    // Set the LED as initialized
+    led_initialized = true;
+    ESP_LOGI(TAG, "LED initialized");
+}
+
+void enable_flash(bool state) {
+    if (state) {
+        gpio_set_level(led_pin, LED_CMD_ON);
+    }
+    else {
+        gpio_set_level(led_pin, LED_CMD_OFF);
+    }
+}
 
 esp_err_t setup_camera(int cam_frame_size, int cam_jpeg_quality){
     if (init_camera(cam_frame_size, cam_jpeg_quality) != ESP_OK) {
@@ -248,47 +279,4 @@ esp_err_t process_cmd(char *variable, int val){
     }
 
     return ESP_OK;
-}
-
-esp_err_t take_snapshot(camera_fb_t *fb){
-    esp_err_t res = ESP_OK;
-    size_t _jpg_buf_len;
-    uint8_t * _jpg_buf;
-
-    int8_t retries = 5;
-
-    while (retries > 0)
-    {
-        fb = esp_camera_fb_get();
-        if (!fb){
-            retries =- 1;
-        }
-        else
-            break;
-    }
-
-    if (!fb)
-    {
-        ESP_LOGE(TAG, "Camera capture failed");
-        //httpd_resp_send_500(req);
-        return ESP_FAIL;
-    }
-
-    if(fb->format != PIXFORMAT_JPEG){
-        bool jpeg_converted = frame2jpg(fb, 80, &_jpg_buf, &_jpg_buf_len);
-        if(!jpeg_converted){
-            ESP_LOGE(TAG, "JPEG compression failed");
-            esp_camera_fb_return(fb);
-            res = ESP_FAIL;
-        }
-    } else {
-        _jpg_buf_len = fb->len;
-        _jpg_buf = fb->buf;
-    }
-
-    return res;
-}
-
-void return_frame_buffer(camera_fb_t* snapshot) {
-    esp_camera_fb_return(snapshot);
 }
