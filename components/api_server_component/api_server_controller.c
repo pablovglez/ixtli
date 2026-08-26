@@ -305,32 +305,14 @@ void greeting_led() {
     set_led_intensity(0); // Ensure LED is off at the end
 }
 
-void setupLedFlash() 
+void setup_led_flash()
 {   
-    ledc_timer_config_t ledc_timer = {
-        .speed_mode       = LEDC_LOW_SPEED_MODE,
-        .timer_num        = LEDC_TIMER,
-        .duty_resolution  = LEDC_TIMER_8_BIT, // 8-bit resolution
-        .freq_hz          = 5000,
-        .clk_cfg          = LEDC_AUTO_CLK
-    };
-    ledc_timer_config(&ledc_timer);
-
-    ledc_channel_config_t ledc_channel = {
-        .speed_mode     = LEDC_LOW_SPEED_MODE,
-        .channel        = LEDC_CHANNEL,
-        .timer_sel      = LEDC_TIMER,
-        .intr_type      = LEDC_INTR_DISABLE,
-        .gpio_num       = LEDC_OUTPUT_IO,
-        .duty           = 0,
-        .hpoint         = 0
-    };
-    ledc_channel_config(&ledc_channel);
+    ESP_LOGI(TAG, "Setting up flash");
 }
 
 static esp_err_t enable_led(httpd_req_t *req)
 { // Turn LED On or Off
-#if LEDC_OUTPUT_IO > 0
+#if FLASH_PIN > 0
     led_bool = (led_bool + 1 ) % 2 ;
     #ifdef DEBUG_ON
     ESP_LOGI(TAG, "LED flash is now %s", led_bool ? "ON" : "OFF");
@@ -430,7 +412,7 @@ void obtain_time() {
 
 void setup_api_server(char * given_key)
 {   
-    setupLedFlash();
+    setup_led_flash();
     httpd_config_t api_config = HTTPD_DEFAULT_CONFIG();
     httpd_handle_t api_httpd  = NULL;
     strcpy(auth_token, given_key);
