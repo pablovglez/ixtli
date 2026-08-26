@@ -104,8 +104,8 @@ void app_main(){
     ESP_LOGI(TAG, "Camera Ready! Use 'http://%s' to connect", ip_address);
 
     // Play greeting LED animation to indicate the server is ready
-#if LEDC_OUTPUT_IO > 0
-    greeting_led();
-#endif
+    #if FLASH_PIN > 0
+        greeting_led();
+    #endif
 
 }
